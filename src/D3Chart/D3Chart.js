@@ -1,0 +1,119 @@
+import React, { useRef, useState, useEffect } from "react";
+import * as d3 from "d3";
+import { getChart } from "../App";
+
+const D3Chart = () => {
+  const [data, setData] = useState({
+    title: [],
+    budget: [],
+  });
+  const chartRef = useRef(null);
+
+  const width = 560;
+  const height = 470;
+  const margin = 40;
+  const radius = Math.min(width, height) / 2 - margin;
+
+  const getData = () => {
+    getChart().then((res) => {
+      createChart(res.data.myBudget);
+      setData({
+        title: res.data.myBudget.map((res) => {
+          return res.title;
+        }),
+        budget: res.data.myBudget.map((res) => {
+          return res.budget;
+        }),
+      });
+    });
+  };
+
+  const { title } = data;
+  const getMidAngle = (d) => d.startAngle + (d.endAngle - d.startAngle) / 2;
+
+  const createChart = (data) => {
+    let colors = d3
+      .scaleOrdinal()
+      .domain(title)
+      .range([
+        "#B21F00",
+        "#C9DE00",
+        "#2FDE00",
+        "#00A6B4",
+        "#A62A2A",
+        "#9F703A",
+        "#9CCB19"
+      ]);
+    let pie = d3.pie().value((d) => d.budget)(data);
+
+    var arc = d3
+      .arc()
+      .outerRadius(radius * 0.7)
+      .innerRadius(radius * 0.4);
+
+    var outerArc = d3
+      .arc()
+      .outerRadius(radius * 0.9)
+      .innerRadius(radius * 0.9);
+
+    var svg = d3
+      .select(chartRef.current)
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+    svg
+      .selectAll("allSlices")
+      .data(pie)
+      .enter()
+      .append("path")
+      .attr("d", arc)
+      .attr("fill", (d) => colors(d.data.title))
+      .attr("stroke", "white")
+      .style("stroke-width", "2px")
+      .style("opacity", 0.7);
+
+    svg
+      .selectAll("allPolylines")
+      .data(pie)
+      .enter()
+      .append("polyline")
+      .attr("stroke", '#D3D3D3' )
+      .attr("stroke-width", 1)
+      .style("fill", "none")
+      .attr("points", (d) => {
+        var posA = arc.centroid(d);
+        var posB = outerArc.centroid(d);
+        var posC = outerArc.centroid(d);
+        var midAngle = getMidAngle(d);
+        posC[0] = radius * 0.95 * (midAngle < Math.PI ? 1 : -1);
+        return [posA, posB, posC];
+      });
+    svg
+      .selectAll("allLabels")
+      .data(pie)
+      .enter()
+      .append("text")
+      .text((d) => d.data.title)
+      .attr("transform", (d) => {
+        var pos = outerArc.centroid(d);
+        var midAngle = getMidAngle(d);
+        pos[0] = radius * 0.99 * (midAngle < Math.PI ? 1 : -1);
+        return `translate(${pos})`;
+      })
+      .style("text-anchor", (d) => {
+        var midAngle = getMidAngle(d);
+        return midAngle < Math.PI ? "start" : "end";
+      });
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  return <figure ref={chartRef}></figure>;
+};
+
+export default D3Chart;

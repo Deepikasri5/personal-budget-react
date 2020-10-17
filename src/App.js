@@ -1,5 +1,6 @@
 import React from "react";
-import "./App.css";
+import "./App.scss";
+import axios from "axios";
 
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
@@ -10,7 +11,15 @@ import Footer from "./Footer/Footer";
 import AboutPage from "./AboutPage/AboutPage";
 import LoginPage from "./LoginPage/LoginPage";
 
+export const getChart = ()=>{
+  const res = axios.get("http://localhost:3001/budget");
+  return res;
+}
+
+
 function App() {
+
+
   return (
     <Router>
       <Menu />
